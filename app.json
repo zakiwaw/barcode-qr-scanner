@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Barcode QR Scanner",
+    "slug": "barcode-qr-scanner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "CameraUsageDescription": "Diese App benötigt Kamerazugriff zum Scannen von Barcodes und QR-Codes."
+      }
+    },
+    "android": {
+      "permissions": ["android.permission.CAMERA"],
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
