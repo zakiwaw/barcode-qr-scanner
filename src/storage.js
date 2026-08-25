@@ -16,10 +16,10 @@ export async function addScan(data, type) {
   try {
     const history = await getScanHistory();
 
-    // Duplikat-Filter: letzter Scan gleich?
-    const lastEntry = history[0];
-    if (lastEntry && lastEntry.data === data) {
-      return history;
+    // Duplikat-Filter: Code existiert bereits irgendwo im Verlauf?
+    const exists = history.some((item) => item.data === data);
+    if (exists) {
+      return { history, duplicate: true };
     }
 
     const entry = {
@@ -31,10 +31,10 @@ export async function addScan(data, type) {
 
     const newHistory = [entry, ...history];
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
-    return newHistory;
+    return { history: newHistory, duplicate: false };
   } catch (e) {
     console.error('Fehler beim Speichern:', e);
-    return [];
+    return { history: [], duplicate: false };
   }
 }
 

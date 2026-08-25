@@ -50,9 +50,10 @@ export default function ScannerScreen() {
 
   const saveCode = async (data, type) => {
     const cleanData = data.trim();
-    if (!cleanData) return;
-    await addScan(cleanData, type);
-    setLastScan({ data: cleanData, type });
+    if (!cleanData) return { duplicate: false };
+    const result = await addScan(cleanData, type);
+    setLastScan({ data: cleanData, type, duplicate: result.duplicate });
+    return result;
   };
 
   const handleBarcodeScanned = async ({ type, data }) => {
@@ -68,9 +69,13 @@ export default function ScannerScreen() {
       Alert.alert('Code fehlt', 'Bitte gib einen Barcode oder QR-Code ein.');
       return;
     }
-    await saveCode(manualCode, 'manuell');
+    const result = await saveCode(manualCode, 'manuell');
     setManualCode('');
-    Alert.alert('Gespeichert', 'Der manuell eingegebene Code wurde im Verlauf gespeichert.');
+    if (result.duplicate) {
+      Alert.alert('Duplikat', 'Dieser Code ist bereits im Verlauf gespeichert.');
+    } else {
+      Alert.alert('Gespeichert', 'Der manuell eingegebene Code wurde im Verlauf gespeichert.');
+    }
   };
 
   const copyToClipboard = async () => {
@@ -131,6 +136,9 @@ export default function ScannerScreen() {
         <View style={local.result}>
           <Text numberOfLines={2} style={local.resultData}>{lastScan.data}</Text>
           <Text style={local.resultType}>Typ: {lastScan.type}</Text>
+          {lastScan.duplicate && (
+            <Text style={local.duplicateText}>⚠️ Bereits im Verlauf vorhanden — nicht erneut gespeichert</Text>
+          )}
           <TouchableOpacity style={local.copyButton} onPress={copyToClipboard}>
             <Text style={local.copyText}>📋 Kopieren</Text>
           </TouchableOpacity>
@@ -175,6 +183,7 @@ const local = StyleSheet.create({
   result: { marginTop: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 },
   resultData: { color: colors.text, fontSize: 16, fontWeight: '700' },
   resultType: { color: colors.accent, fontSize: 12, marginTop: 4 },
+  duplicateText: { color: '#FFA726', fontSize: 13, fontWeight: '600', marginTop: 6 },
   copyButton: { alignSelf: 'flex-start', marginTop: 10, backgroundColor: colors.primary, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 },
   copyText: { color: colors.text, fontSize: 13, fontWeight: '600' },
   manualBox: { marginTop: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 14 },
