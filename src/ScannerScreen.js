@@ -9,9 +9,11 @@ import {
   View,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useAudioPlayer } from 'expo-audio';
 import * as Clipboard from 'expo-clipboard';
 import styles, { colors } from './styles';
 import { addScan } from './storage';
+import beepSound from './beep';
 
 const barcodeTypes = [
   'qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code39', 'code93',
@@ -28,6 +30,7 @@ export default function ScannerScreen() {
   const [scanning, setScanning] = useState(true);
   const [manualCode, setManualCode] = useState('');
   const [zoom, setZoom] = useState(0);
+  const player = useAudioPlayer(beepSound);
 
   useEffect(() => {
     if (permission && !permission.granted) requestPermission();
@@ -35,6 +38,15 @@ export default function ScannerScreen() {
 
   const zoomIn = () => setZoom((z) => Math.min(1, +(z + ZOOM_STEP).toFixed(3)));
   const zoomOut = () => setZoom((z) => Math.max(0, +(z - ZOOM_STEP).toFixed(3)));
+
+  const playBeep = () => {
+    try {
+      player.seekTo(0);
+      player.play();
+    } catch (e) {
+      // Ton ist optional — Fehler ignorieren
+    }
+  };
 
   const saveCode = async (data, type) => {
     const cleanData = data.trim();
@@ -46,6 +58,7 @@ export default function ScannerScreen() {
   const handleBarcodeScanned = async ({ type, data }) => {
     if (!scanning) return;
     setScanning(false);
+    playBeep();
     await saveCode(data, type);
     setTimeout(() => setScanning(true), 1500);
   };
