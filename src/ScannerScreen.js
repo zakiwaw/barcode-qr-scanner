@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -17,16 +18,23 @@ const barcodeTypes = [
   'code128', 'itf14', 'aztec', 'pdf417', 'datamatrix',
 ];
 
+// iOS braucht feinere Zoom-Schritte (0..1 normalisiert), Android grobere
+const ZOOM_STEP = Platform.OS === 'ios' ? 0.02 : 0.1;
+
 export default function ScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
   const [lastScan, setLastScan] = useState(null);
   const [scanning, setScanning] = useState(true);
   const [manualCode, setManualCode] = useState('');
+  const [zoom, setZoom] = useState(0);
 
   useEffect(() => {
     if (permission && !permission.granted) requestPermission();
   }, [permission]);
+
+  const zoomIn = () => setZoom((z) => Math.min(1, +(z + ZOOM_STEP).toFixed(3)));
+  const zoomOut = () => setZoom((z) => Math.max(0, +(z - ZOOM_STEP).toFixed(3)));
 
   const saveCode = async (data, type) => {
     const cleanData = data.trim();
@@ -76,12 +84,14 @@ export default function ScannerScreen() {
   return (
     <View style={local.screen}>
       <Text style={local.title}>Barcode & QR Scanner</Text>
-      <Text style={local.subtitle}>Code innerhalb des Rahmens ausrichten</Text>
+      <Text style={local.subtitle}>Code innerhalb des Rahmens ausrichten.{'\n'}Bei unscharfem Bild: Zoom + verwenden.</Text>
 
       <View style={local.cameraFrame}>
         <CameraView
           style={local.camera}
           facing="back"
+          autoFocus="on"
+          zoom={zoom}
           enableTorch={torchOn}
           barcodeScannerSettings={{ barcodeTypes }}
           onBarcodeScanned={handleBarcodeScanned}
@@ -89,9 +99,20 @@ export default function ScannerScreen() {
         <View pointerEvents="none" style={local.targetFrame} />
       </View>
 
-      <TouchableOpacity style={local.torchButton} onPress={() => setTorchOn((value) => !value)}>
-        <Text style={local.torchText}>{torchOn ? '🔦 Taschenlampe an' : '🔦 Taschenlampe aus'}</Text>
-      </TouchableOpacity>
+      <View style={local.controlsRow}>
+        <TouchableOpacity style={local.controlButton} onPress={zoomOut}>
+          <Text style={local.controlText}>−</Text>
+        </TouchableOpacity>
+        <View style={local.zoomDisplay}>
+          <Text style={local.zoomText}>Zoom {Math.round(zoom * 100)}%</Text>
+        </View>
+        <TouchableOpacity style={local.controlButton} onPress={zoomIn}>
+          <Text style={local.controlText}>+</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={local.torchButton} onPress={() => setTorchOn((value) => !value)}>
+          <Text style={local.torchText}>{torchOn ? '🔦 An' : '🔦 Aus'}</Text>
+        </TouchableOpacity>
+      </View>
 
       {lastScan && (
         <View style={local.result}>
@@ -131,7 +152,12 @@ const local = StyleSheet.create({
   cameraFrame: { height: 255, borderRadius: 16, overflow: 'hidden', borderWidth: 2, borderColor: colors.accent, backgroundColor: '#000' },
   camera: { flex: 1 },
   targetFrame: { position: 'absolute', left: '12%', right: '12%', top: '26%', bottom: '26%', borderWidth: 2, borderColor: '#fff', borderRadius: 10 },
-  torchButton: { alignSelf: 'center', marginTop: 12, backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20 },
+  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12, gap: 10 },
+  controlButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  controlText: { color: colors.text, fontSize: 22, fontWeight: '700', marginTop: -2 },
+  zoomDisplay: { minWidth: 90, alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingVertical: 10, paddingHorizontal: 12 },
+  zoomText: { color: colors.textDim, fontSize: 13, fontWeight: '600' },
+  torchButton: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 22 },
   torchText: { color: colors.text, fontSize: 14, fontWeight: '600' },
   result: { marginTop: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 },
   resultData: { color: colors.text, fontSize: 16, fontWeight: '700' },
